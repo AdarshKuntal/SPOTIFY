@@ -18,19 +18,25 @@ function formatTime(seconds) {
 
 async function getsongs(folder) {
   currfolder = folder;
-  let a = await fetch(`http://127.0.0.1:5500/${currfolder}/`);
-  let response = await a.text();
-  let div = document.createElement("div");
-  div.innerHTML = response;
-  let as = div.getElementsByTagName("a");
-  songs = [];
-  for (let index = 0; index < as.length; index++) {
-    const element = as[index];
-    if (element.href.endsWith(".mp3")) {
-      songs.push(element.href.split(`/${currfolder}/`)[1]);
+  
+  try {
+    // Load songs from the JSON file instead of directory listing
+    const response = await fetch('/public/songs/songs-list.json');
+    const songsData = await response.json();
+    
+    // Extract folder name from the path (e.g., "public/songs/MELODY" -> "MELODY")
+    const folderName = folder.split('/').pop();
+    
+    if (songsData[folderName]) {
+      songs = songsData[folderName];
+    } else {
+      console.error(`No songs found for folder: ${folderName}`);
+      songs = [];
     }
+  } catch (error) {
+    console.error('Error loading songs:', error);
+    songs = [];
   }
-  //  return songs;
 
   let songUl = document
     .querySelector(".songlist")
@@ -63,6 +69,7 @@ async function getsongs(folder) {
 }
 
 const playmusic = (track, pause = false) => {
+  // Use relative path for deployment compatibility
   currentsong.src = `/${currfolder}/` + track;
   if (!pause) {
     currentsong.play();
@@ -131,7 +138,7 @@ const playmusic = (track, pause = false) => {
 async function main() {
   // getting list of all songs
 
-  await getsongs("songs/JOY");
+  await getsongs("public/songs/MELODY");
   playmusic(songs[0], true);
 
   //  display all albums on the page
@@ -198,7 +205,7 @@ async function main() {
   // LOAD THE PLAYLIST WHENEVER CARD IS CLICKED
   Array.from(document.getElementsByClassName("card")).forEach((e) => {
     e.addEventListener("click", async (item) => {
-      songs = await getsongs(`songs/${item.currentTarget.dataset.folder}`);
+      songs = await getsongs(`public/songs/${item.currentTarget.dataset.folder}`);
       playmusic(songs[0])
     });
     
